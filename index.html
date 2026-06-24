@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TaksiMobil — Akıllı Durak-Taksi Platformu · Isparta Şoförler Odası Sunumu</title>
+<meta name="description" content="Taksilerin kendi durak alanı dışından yolcu almasını coğrafi sınır ile engelleyen, taksiyle ilgili tüm sorunları tek çatıda çözen akıllı durak-taksi platformu." />
+<style>
+  :root{
+    --rose:#E14B7A; --rose-deep:#C7396A; --rose-tint:#FCE7F0;
+    --ink:#1B1418; --ink-soft:#2A1F25; --muted:#6E636B; --muted2:#9B909A;
+    --line:#F0E6EC; --surface:#FFFFFF; --warm:#FBF7F9;
+    --amber:#F2B705; --amber-deep:#D99A00; --green:#1E9E6A; --red:#E0492E;
+    --shadow:0 24px 60px -24px rgba(27,20,24,.35);
+    --shadow-sm:0 10px 30px -16px rgba(27,20,24,.3);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    background:var(--ink);color:var(--ink);overflow:hidden;-webkit-font-smoothing:antialiased;
+  }
+  #deck{position:fixed;inset:0}
+  .slide{
+    position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;
+    padding:7vh 8vw 9vh;
+    opacity:0;visibility:hidden;transform:translateY(24px);
+    transition:opacity .5s ease, transform .5s ease, visibility .5s;
+    background:var(--warm);overflow:auto;
+  }
+  .slide.active{opacity:1;visibility:visible;transform:none;z-index:2}
+  .slide.dark{background:radial-gradient(140% 120% at 80% -10%,#3a2630 0%,var(--ink) 55%);color:#fff}
+  .slide.rose{background:linear-gradient(135deg,var(--rose) 0%,var(--rose-deep) 100%);color:#fff}
+
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:.55rem;
+    font-size:clamp(.7rem,1.1vw,.85rem);font-weight:800;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--rose);margin-bottom:1.3rem;
+  }
+  .slide.dark .eyebrow,.slide.rose .eyebrow{color:var(--amber)}
+  .eyebrow .dot{width:10px;height:10px;border-radius:50%;background:var(--rose)}
+  .slide.dark .eyebrow .dot,.slide.rose .eyebrow .dot{background:var(--amber)}
+
+  h1{font-size:clamp(2.3rem,6vw,4.8rem);line-height:1.04;font-weight:850;letter-spacing:-.02em}
+  h2{font-size:clamp(1.7rem,4vw,3.2rem);line-height:1.08;font-weight:850;letter-spacing:-.015em;margin-bottom:1.5rem}
+  h3{font-size:clamp(1.02rem,1.6vw,1.3rem);font-weight:800}
+  .lede{font-size:clamp(1.02rem,1.8vw,1.45rem);color:var(--muted);max-width:48ch;line-height:1.5;margin-top:1.3rem}
+  .slide.dark .lede,.slide.rose .lede{color:rgba(255,255,255,.85)}
+  p{line-height:1.55}
+  .accent{color:var(--rose)}
+  .slide.dark .accent,.slide.rose .accent{color:var(--amber)}
+  .hl{background:linear-gradient(180deg,transparent 58%,var(--rose-tint) 58%);padding:0 .12em;border-radius:2px}
+
+  .grid{display:grid;gap:1.1rem}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .split{display:grid;grid-template-columns:1.05fr .95fr;gap:3vw;align-items:center}
+  @media(max-width:900px){.g3{grid-template-columns:1fr}.split{grid-template-columns:1fr;gap:2rem}}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:1.4rem;box-shadow:var(--shadow-sm)}
+  .slide.dark .card{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);box-shadow:none}
+  .slide.rose .card{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.30);box-shadow:none;color:#fff}
+  .slide.rose .card h3{color:#fff}
+  .slide.rose .card .ic{color:#fff}
+  .card .ic{font-size:1.7rem;margin-bottom:.6rem;display:block}
+  .card h3{margin-bottom:.4rem}
+  .card p{font-size:.97rem;color:var(--muted)}
+  .slide.dark .card p,.slide.rose .card p{color:rgba(255,255,255,.78)}
+
+  /* problem -> çözüm kartı */
+  .ps{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:1.2rem 1.3rem;box-shadow:var(--shadow-sm)}
+  .ps .prob{display:flex;align-items:center;gap:.5rem;color:var(--red);font-weight:800;font-size:.95rem}
+  .ps .sol{display:flex;align-items:flex-start;gap:.5rem;margin-top:.6rem;font-size:1.02rem;line-height:1.4}
+  .ps .sol b{color:var(--ink)}
+  .ps .arrow{color:var(--green);font-weight:900}
+
+  ul.clean{list-style:none;display:flex;flex-direction:column;gap:.95rem;margin-top:.5rem}
+  ul.clean li{display:flex;gap:.85rem;align-items:flex-start;font-size:clamp(1rem,1.5vw,1.18rem);line-height:1.45}
+  ul.clean li .chk{flex:0 0 auto;width:26px;height:26px;border-radius:8px;display:grid;place-items:center;
+    background:var(--rose-tint);color:var(--rose-deep);font-weight:900;font-size:.9rem;margin-top:.1rem}
+  .slide.dark ul.clean li .chk,.slide.rose ul.clean li .chk{background:rgba(242,183,5,.2);color:var(--amber)}
+
+  .badge{display:inline-block;font-size:.78rem;font-weight:800;padding:.3rem .7rem;border-radius:999px;background:var(--rose-tint);color:var(--rose-deep)}
+  .badge.warn{background:#FFF1E8;color:var(--red)}
+  .badge.ok{background:#E6F6EE;color:var(--green)}
+  .pill{display:inline-flex;align-items:center;gap:.5rem;border:1px solid var(--line);background:var(--surface);
+    border-radius:999px;padding:.5rem .95rem;font-weight:700;font-size:.9rem;box-shadow:var(--shadow-sm)}
+  .slide.dark .pill{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.16);color:#fff}
+
+  .flow{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:1rem}
+  @media(max-width:900px){.flow{grid-template-columns:1fr}}
+  .step{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:1.3rem;box-shadow:var(--shadow-sm)}
+  .step .n{font-size:.78rem;font-weight:900;color:var(--rose);letter-spacing:.1em}
+  .step h3{margin:.4rem 0}
+  .step p{font-size:.95rem;color:var(--muted)}
+
+  .mapwrap{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:1.2rem;box-shadow:var(--shadow)}
+  .legend{display:flex;flex-wrap:wrap;gap:.5rem 1.1rem;margin-top:.9rem;font-size:.85rem;color:var(--muted);font-weight:600}
+  .legend span{display:inline-flex;align-items:center;gap:.45rem}
+  .legend i{width:14px;height:14px;border-radius:4px;display:inline-block}
+  .note{font-size:.86rem;color:var(--muted2);margin-top:1.2rem;font-style:italic}
+  .slide.dark .note,.slide.rose .note{color:rgba(255,255,255,.6)}
+  .kicker-row{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.7rem}
+
+  /* progress + nav */
+  #bar{position:fixed;top:0;left:0;height:4px;background:linear-gradient(90deg,var(--rose),var(--amber));z-index:50;transition:width .4s ease;border-radius:0 4px 4px 0}
+  #nav{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:14px;
+    background:rgba(27,20,24,.72);backdrop-filter:blur(10px);padding:8px 14px;border-radius:999px;color:#fff}
+  #nav button{all:unset;cursor:pointer;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:1.1rem;opacity:.85}
+  #nav button:hover{opacity:1;background:rgba(255,255,255,.12)}
+  #count{font-size:.85rem;font-variant-numeric:tabular-nums;min-width:52px;text-align:center;font-weight:700}
+  #dots{position:fixed;right:20px;top:50%;transform:translateY(-50%);z-index:60;display:flex;flex-direction:column;gap:9px}
+  #dots b{width:9px;height:9px;border-radius:50%;background:rgba(27,20,24,.22);cursor:pointer;transition:.25s}
+  #dots b.on{background:var(--rose);transform:scale(1.35)}
+  .hint{position:fixed;bottom:22px;right:26px;z-index:40;font-size:.78rem;color:var(--muted2);font-weight:600}
+  @media(max-width:760px){.hint{display:none}#dots{display:none}}
+
+  .brand{display:flex;align-items:center;gap:.6rem;font-weight:850;font-size:1.15rem}
+  .brand .bd{width:16px;height:16px;border-radius:50%;background:var(--rose)}
+  .slide.dark .brand .bd,.slide.rose .brand .bd{background:var(--amber)}
+
+  /* kapak & kapanış: ortalanmış, çakışmasız */
+  .slide.cover{justify-content:center}
+  .brand-top{position:absolute;top:6.5vh;left:8vw}
+  .foot{position:absolute;bottom:4.5vh;left:8vw;right:8vw;display:flex;justify-content:space-between;gap:1rem;
+    font-size:.8rem;color:var(--muted2);font-weight:600}
+  .slide.dark .foot,.slide.rose .foot{color:rgba(255,255,255,.55)}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="deck">
+
+  <!-- 1 — KAPAK -->
+  <section class="slide cover dark active">
+    <div class="brand brand-top"><span class="bd"></span> TaksiMobil</div>
+    <div class="eyebrow"><span class="dot"></span> Isparta Şoförler ve Otomobilciler Odası · Sunum</div>
+    <h1>Taksinin tüm sorunları,<br><span class="accent">tek akıllı sistemde.</span></h1>
+    <p class="lede">Taksilerin kendi durak alanı dışından yolcu almasını engelleyen; sırayı, güveni ve denetimi tek çatı altında çözen, Isparta'ya özel akıllı durak-taksi platformu.</p>
+    <div class="kicker-row">
+      <span class="pill">📍 Durak sınırı korunur</span>
+      <span class="pill">⚖️ Sıra adil işler</span>
+      <span class="pill">🛡️ Anlaşmazlık kanıtla biter</span>
+    </div>
+    <div class="foot"><span>TaksiMobil · Akıllı Çağrı Platformu</span><span>Isparta Şoförler Odası Sunumu</span></div>
+  </section>
+
+  <!-- 2 — SORUN -->
+  <section class="slide">
+    <div class="eyebrow"><span class="dot"></span> Çözülmek İstenen Ana Sorun</div>
+    <div class="split">
+      <div>
+        <h2>Bir taksinin, <span class="hl">başka durağın bölgesinden</span> yolcu alması.</h2>
+        <p class="lede" style="color:var(--muted)">Durak sistemi adil paylaşıma dayanır: her durak, kendi bölgesindeki yolcuya hizmet eder. Bir araç kendi durağının dışına geçip yolcu aldığında bu denge bozulur — ve bunu sahada denetlemek bugün neredeyse imkânsız.</p>
+        <ul class="clean" style="margin-top:1.5rem">
+          <li><span class="chk">!</span> Bölge ihlalini anlık görecek bir araç yok.</li>
+          <li><span class="chk">!</span> Şikâyetler "kim, nerede, ne zaman" kanıtı olmadan geliyor.</li>
+          <li><span class="chk">!</span> Çözüm yükü tümüyle Oda'nın hakemliğine kalıyor.</li>
+        </ul>
+      </div>
+      <div class="mapwrap">
+        <svg viewBox="0 0 400 300" width="100%" role="img" aria-label="Durak bölgeleri ve ihlal">
+          <rect x="0" y="0" width="400" height="300" rx="14" fill="#FBF7F9"/>
+          <path d="M0 150 H400 M200 0 V300" stroke="#EADFE6" stroke-width="10" fill="none"/>
+          <circle cx="120" cy="95" r="78" fill="rgba(30,158,106,.10)" stroke="#1E9E6A" stroke-width="2" stroke-dasharray="5 5"/>
+          <text x="120" y="48" text-anchor="middle" font-size="12" font-weight="800" fill="#1E9E6A">A DURAĞI</text>
+          <circle cx="290" cy="205" r="78" fill="rgba(225,75,122,.10)" stroke="#E14B7A" stroke-width="2" stroke-dasharray="5 5"/>
+          <text x="290" y="268" text-anchor="middle" font-size="12" font-weight="800" fill="#C7396A">B DURAĞI</text>
+          <text x="120" y="100" text-anchor="middle" font-size="22">🚕</text>
+          <path d="M140 110 Q230 130 268 184" stroke="#E0492E" stroke-width="3" fill="none" stroke-dasharray="6 6"/>
+          <polygon points="268,184 259,178 271,172" fill="#E0492E"/>
+          <text x="288" y="210" text-anchor="middle" font-size="18">🧍</text>
+          <text x="205" y="148" text-anchor="middle" font-size="11" font-weight="800" fill="#E0492E">⚠ BÖLGE İHLALİ</text>
+        </svg>
+        <div class="legend">
+          <span><i style="background:#1E9E6A"></i> A durağının bölgesi</span>
+          <span><i style="background:#E14B7A"></i> B durağının bölgesi</span>
+          <span><i style="background:#E0492E"></i> İzinsiz yolcu alma</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 — SORUNUN BEDELİ -->
+  <section class="slide">
+    <div class="eyebrow"><span class="dot"></span> Sorunun Bedeli</div>
+    <h2>Tek bir ihlal, <span class="accent">dört yarayı</span> birden açar.</h2>
+    <div class="grid g2" style="max-width:980px">
+      <div class="card"><span class="ic">⚔️</span><h3>Haksız rekabet</h3><p>Sırasını bekleyen şoför, bölgesine giren dış araç yüzünden hak ettiği yolcuyu kaybeder.</p></div>
+      <div class="card"><span class="ic">📣</span><h3>Bitmeyen şikâyet</h3><p>Kanıtsız "o vardı / ben yoktum" tartışmaları sürekli Oda'nın önüne gelir.</p></div>
+      <div class="card"><span class="ic">🤝</span><h3>Güven erozyonu</h3><p>Üyeler arası huzursuzluk artar; durak düzenine olan inanç zayıflar.</p></div>
+      <div class="card"><span class="ic">💸</span><h3>Gelir kaybı</h3><p>Bölgesinde kuralına göre çalışan dürüst şoförün günlük kazancı doğrudan azalır.</p></div>
+    </div>
+    <p class="note">Dördünün ortak nedeni tek: <b>ihlali objektif olarak görecek bir sistem yok.</b> Çözüm de tam buradan başlıyor.</p>
+  </section>
+
+  <!-- 4 — ÇÖZÜM -->
+  <section class="slide rose">
+    <div class="eyebrow"><span class="dot"></span> Çözümümüz</div>
+    <h2 style="max-width:18ch">Sistem, durak sınırını <u>harita üzerinde</u> bilir.</h2>
+    <p class="lede" style="max-width:54ch">Her durak için harita üzerinde bir <b>sınır bölgesi</b> tanımlanır. Her taksi bir durağa kayıtlıdır. Sistem, taksinin konumunu bu sınırla sürekli karşılaştırır:</p>
+    <div class="grid g2" style="margin-top:1.7rem;max-width:760px">
+      <div class="card"><span class="ic">✅</span><h3>Sınır içinde</h3><p>Taksi "Aktif" olabilir, sıraya girer ve yolcu çağrısı alır.</p></div>
+      <div class="card"><span class="ic">⛔</span><h3>Sınır dışında</h3><p>Sistem aktif olmayı reddeder; o taksiye çağrı atanmaz.</p></div>
+    </div>
+    <p class="note" style="color:rgba(255,255,255,.78)">İhlal sonradan "tespit edilmez" — <b>baştan mümkün olmaz.</b></p>
+  </section>
+
+  <!-- 5 — NASIL ÇALIŞIR -->
+  <section class="slide">
+    <div class="eyebrow"><span class="dot"></span> Nasıl Çalışır</div>
+    <h2>Konumdan çağrıya: <span class="accent">üç adım.</span></h2>
+    <div class="flow">
+      <div class="step"><div class="n">ADIM 1 — SINIR</div><h3>Durak bölgesi tanımlanır</h3><p>Her durağın gerçek hizmet alanı harita üzerinde sınır olarak işaretlenir. Taksi bu durağa bağlanır.</p></div>
+      <div class="step"><div class="n">ADIM 2 — KONTROL</div><h3>Konum sınırla eşleşir</h3><p>Taksi "Aktif Ol" dediğinde anlık konumu, kayıtlı durağın sınırı içinde mi diye kesin olarak sınanır.</p></div>
+      <div class="step"><div class="n">ADIM 3 — ATAMA</div><h3>Yalnız doğru taksi alır</h3><p>Yolcu çağrısı, yalnızca o bölgenin sınırı içindeki sıradaki taksiye gider. Dışarıdakiler hiç görmez.</p></div>
+    </div>
+    <div class="card" style="margin-top:1.5rem;border-left:5px solid var(--rose)">
+      <h3 style="color:var(--rose-deep)">Sonuç</h3>
+      <p style="color:var(--muted);font-size:1.05rem">Taksi bölgesinden çıktığı an çağrı havuzundan otomatik düşer; geri dönünce yeniden katılır. Şoför neden çağrı almadığını ekranında net görür — itiraza yer kalmaz.</p>
+    </div>
+  </section>
+
+  <!-- 6 — ADİL SIRA -->
+  <section class="slide dark">
+    <div class="eyebrow"><span class="dot"></span> Adalet Katmanı</div>
+    <div class="split">
+      <div>
+        <h2>Sıra, <span class="accent">geldiğin sıraya</span> göre.</h2>
+        <p class="lede">Bölge içinde kim önce hazır olduysa, çağrıyı önce o alır. Aynı yolcu asla iki taksiye birden düşmez; sıra otomatik ve şeffaf işler.</p>
+        <ul class="clean" style="margin-top:1.3rem">
+          <li><span class="chk">✓</span> Şoför kaçıncı sırada olduğunu anlık görür.</li>
+          <li><span class="chk">✓</span> Çağrıya yanıt gelmezse sıra bir sonraki taksiye geçer.</li>
+          <li><span class="chk">✓</span> Sınır dışındaki araç sırada görünmez, hak iddia edemez.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:1rem">Durak A — Canlı Sıra</h3>
+        <div style="display:flex;flex-direction:column;gap:.7rem">
+          <div style="display:flex;align-items:center;gap:.8rem;background:rgba(242,183,5,.16);border:1px solid rgba(242,183,5,.4);border-radius:12px;padding:.7rem .9rem">
+            <b style="color:var(--amber);font-size:1.2rem">1</b><span>🚕 32 ABC 01</span><span style="margin-left:auto" class="badge ok">sıradaki</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:.8rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:.7rem .9rem">
+            <b style="font-size:1.2rem">2</b><span>🚕 32 DEF 02</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:.8rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:.7rem .9rem">
+            <b style="font-size:1.2rem">3</b><span>🚕 32 GHI 03</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:.8rem;border-radius:12px;padding:.7rem .9rem;opacity:.5">
+            <b style="font-size:1.2rem">—</b><span>🚕 32 XYZ 09 · sınır dışı</span><span style="margin-left:auto" class="badge warn">sırada değil</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 — BÜTÜNLÜK / KANIT -->
+  <section class="slide">
+    <div class="eyebrow"><span class="dot"></span> Güven & Kanıt</div>
+    <h2>Her hareketin <span class="accent">kaydı tutulur.</span></h2>
+    <div class="grid g3">
+      <div class="card"><span class="ic">🛰️</span><h3>Konum kanıtı</h3><p>Her çağrı, varış ve bekleme; konum ve zaman damgasıyla kayıt altına alınır.</p></div>
+      <div class="card"><span class="ic">🧾</span><h3>Şeffaf geçmiş</h3><p>"Yolcu gelmedi", ücret, iptal — hepsi geriye dönük izlenebilir kayıt olur.</p></div>
+      <div class="card"><span class="ic">🛡️</span><h3>Sahteye geçit yok</h3><p>Sahte konumla sistemi kandırma denemeleri tespit edilip reddedilir.</p></div>
+    </div>
+    <div class="card" style="margin-top:1.4rem;background:var(--rose-tint);border-color:transparent">
+      <p style="font-size:1.1rem;color:var(--rose-deep);font-weight:700">Anlaşmazlıkta Oda, tarafları ayrı ayrı dinlemek yerine <b>tek bir ekrandan kanıtı görür</b> ve hakemliği saniyeler içinde sonuçlandırır.</p>
+    </div>
+  </section>
+
+  <!-- 8 — TÜM SORUNLAR TEK ÇATIDA -->
+  <section class="slide">
+    <div class="eyebrow"><span class="dot"></span> Tek Platform · Tüm Sorunlar</div>
+    <h2>Sadece sınır değil — <span class="accent">taksinin her sorunu.</span></h2>
+    <div class="grid g3">
+      <div class="ps"><div class="prob">✕ Durak dışından yolcu alma</div><div class="sol"><span class="arrow">→</span><span><b>Coğrafi sınır</b> dışarıdaki taksiye çağrı vermez.</span></div></div>
+      <div class="ps"><div class="prob">✕ Sıra kavgası</div><div class="sol"><span class="arrow">→</span><span><b>Otomatik adil sıra</b>; herkes kaçıncı olduğunu görür.</span></div></div>
+      <div class="ps"><div class="prob">✕ "Yolcu gelmedi" tartışması</div><div class="sol"><span class="arrow">→</span><span><b>Konum kanıtlı kayıt</b> tartışmayı bitirir.</span></div></div>
+      <div class="ps"><div class="prob">✕ Korsan / kayıt dışı taşıma</div><div class="sol"><span class="arrow">→</span><span><b>Yalnız kayıtlı şoför</b> çağrı alabilir.</span></div></div>
+      <div class="ps"><div class="prob">✕ Boşa tur, yolcuyu bulamama</div><div class="sol"><span class="arrow">→</span><span><b>Çağrı doğrudan</b> en uygun taksiye düşer.</span></div></div>
+      <div class="ps"><div class="prob">✕ Yolcunun güven kaygısı</div><div class="sol"><span class="arrow">→</span><span><b>Plaka, sürücü kartı, canlı takip</b> görünür.</span></div></div>
+    </div>
+    <p class="note">Hepsi ayrı uygulama değil — <b>tek platformda, birbirine bağlı</b> çözülür.</p>
+  </section>
+
+  <!-- 9 — ÜÇ TARAF DA KAZANIR -->
+  <section class="slide rose">
+    <div class="eyebrow"><span class="dot"></span> Herkes Kazanır</div>
+    <h2 style="max-width:20ch">Yolcu, şoför ve Oda — <u>üçü birden</u>.</h2>
+    <div class="grid g3" style="margin-top:1.3rem">
+      <div class="card"><span class="ic">🧍</span><h3>Yolcu</h3><p>Hızlı çağrı, plakası belli güvenli araç, şeffaf süreç. Korsan endişesi yok.</p></div>
+      <div class="card"><span class="ic">🚖</span><h3>Şoför</h3><p>Sırası korunur, hakkı yenmez, boşa yakıt azalır. Anlaşmazlıkta kanıtı yanında.</p></div>
+      <div class="card"><span class="ic">🏛️</span><h3>Oda</h3><p>Düzen sahada kendiliğinden işler, şikâyet yükü düşer, her durak tek panelden görünür.</p></div>
+    </div>
+  </section>
+
+  <!-- 10 — ODA İÇİN SOMUT KAZANIM -->
+  <section class="slide">
+    <div class="eyebrow"><span class="dot"></span> Şoförler Odası İçin</div>
+    <div class="split">
+      <div>
+        <h2>Düzeni kuran siz, <span class="accent">denetleyen sistem.</span></h2>
+        <p class="lede" style="color:var(--muted)">Kuralları Oda belirler; sistem o kuralları sahada 7/24 kendiliğinden uygular. Oda'nın rolü "kavga çözmek"ten "düzeni yönetmek"e döner.</p>
+        <ul class="clean" style="margin-top:1.3rem">
+          <li><span class="chk">✓</span> Bölge ihlali baştan engellendiği için itirazlar kökten azalır.</li>
+          <li><span class="chk">✓</span> Hangi durakta kaç araç aktif, kim ne zaman iş aldı — anlık görünür.</li>
+          <li><span class="chk">✓</span> Dürüst çalışan şoför hakkını alır; düzene güven geri gelir.</li>
+        </ul>
+      </div>
+      <div class="grid" style="gap:1rem">
+        <div class="card"><span class="ic">⚖️</span><h3>Az şikâyet</h3><p>"Durak ihlali" itirazları kökten azalır.</p></div>
+        <div class="card"><span class="ic">📊</span><h3>Tam görünürlük</h3><p>Tüm duraklar ve hareketler tek panelde.</p></div>
+        <div class="card"><span class="ic">🏆</span><h3>Kurumsal itibar</h3><p>Durak düzenini teknolojiyle yöneten örnek şehir.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 — ODA KENDİ İŞLETİR -->
+  <section class="slide">
+    <div class="eyebrow"><span class="dot"></span> Oda'nın Kendi Sistemi</div>
+    <div class="split">
+      <div>
+        <h2>Bu sistemi <span class="accent">Oda kendi işletir.</span></h2>
+        <p class="lede" style="color:var(--muted)">Platform, Isparta Şoförler Odası'nın <b>kendi sistemi</b> olarak çalışır. Kontrol baştan sona sizde — kurallar, duraklar, üyeler ve fiyatlandırma Oda'nın elinde. Sonuç: hem üyeler hem yolcular tarafında kalıcı memnuniyet.</p>
+        <ul class="clean" style="margin-top:1.3rem">
+          <li><span class="chk">✓</span> <b>Tam kontrol Oda'da:</b> durak sınırlarını, üyeleri ve düzeni siz yönetirsiniz.</li>
+          <li><span class="chk">✓</span> <b>Üye memnuniyeti:</b> adil düzen sayesinde şoförler Oda'ya güvenir, üyelik değer kazanır.</li>
+          <li><span class="chk">✓</span> <b>Yolcu memnuniyeti:</b> hızlı, güvenli ve şeffaf hizmet Oda'nın itibarını yükseltir.</li>
+        </ul>
+      </div>
+      <div class="grid" style="gap:1rem">
+        <div class="card"><span class="ic">🏛️</span><h3>Sizin sisteminiz</h3><p>Oda'nın markası ve yönetimi altında çalışır.</p></div>
+        <div class="card"><span class="ic">🎛️</span><h3>Yönetim sizde</h3><p>Duraklar, üyeler, kurallar ve fiyat tek panelden Oda'nın elinde.</p></div>
+        <div class="card"><span class="ic">😊</span><h3>İki yönlü memnuniyet</h3><p>Hakkı korunan şoför, güvende hisseden yolcu — memnuniyet Oda'ya yazılır.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 — KAPANIŞ -->
+  <section class="slide cover dark">
+    <div class="brand brand-top"><span class="bd"></span> TaksiMobil</div>
+    <div class="eyebrow"><span class="dot"></span> Teşekkürler</div>
+    <h1>Adil durak,<br><span class="accent">akıllı çözüm.</span></h1>
+    <p class="lede">Taksinin tüm sorunlarını tek sistemde çözen bu platformu birlikte Isparta'ya kazandıralım.</p>
+    <div class="kicker-row">
+      <span class="pill">📍 Sınır ihlali = sıfır</span>
+      <span class="pill">⚖️ Şeffaf sıra</span>
+      <span class="pill">🛰️ Kanıtlı hakemlik</span>
+    </div>
+    <div class="foot"><span>Sorularınız için hazırız.</span><span>TaksiMobil · Isparta Şoförler Odası Sunumu</span></div>
+  </section>
+
+</div>
+
+<div id="dots"></div>
+<div id="nav">
+  <button id="prev" aria-label="Önceki">‹</button>
+  <span id="count">1 / 12</span>
+  <button id="next" aria-label="Sonraki">›</button>
+</div>
+<div class="hint">← → ok tuşları ile gezinin</div>
+
+<script>
+  const slides=[...document.querySelectorAll('.slide')];
+  const dotsWrap=document.getElementById('dots');
+  const bar=document.getElementById('bar');
+  const count=document.getElementById('count');
+  let i=0;
+  slides.forEach((_,k)=>{const b=document.createElement('b');b.onclick=()=>go(k);dotsWrap.appendChild(b);});
+  const dots=[...dotsWrap.children];
+  function go(n){
+    i=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach((s,k)=>s.classList.toggle('active',k===i));
+    dots.forEach((d,k)=>d.classList.toggle('on',k===i));
+    bar.style.width=((i+1)/slides.length*100)+'%';
+    count.textContent=(i+1)+' / '+slides.length;
+    location.hash=i+1;
+  }
+  document.getElementById('next').onclick=()=>go(i+1);
+  document.getElementById('prev').onclick=()=>go(i-1);
+  document.addEventListener('keydown',e=>{
+    if(['ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();go(i+1);}
+    if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();go(i-1);}
+    if(e.key==='Home')go(0); if(e.key==='End')go(slides.length-1);
+  });
+  let sx=null;
+  addEventListener('touchstart',e=>sx=e.touches[0].clientX,{passive:true});
+  addEventListener('touchend',e=>{if(sx===null)return;const dx=e.changedTouches[0].clientX-sx;if(Math.abs(dx)>50)go(i+(dx<0?1:-1));sx=null;},{passive:true});
+  go(parseInt(location.hash.slice(1))-1||0);
+</script>
+</body>
+</html>
